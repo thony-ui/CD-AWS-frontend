@@ -29,7 +29,7 @@ jobs:
         run: zip -r frontend-app.zip . -x "*.git*" -x "*.github*" -x "*.vscode*" -x "*node_modules*" -x "*tests*" -x "*.env*"
 
       - name: Get Node.js version
-        run: echo "VERSION=$(node -p 'require(\"./package.json\").version')" >> $GITHUB_ENV
+        run: echo "VERSION=$(node -p 'require("./package.json").version')" >> $GITHUB_ENV
       - name: Deploy to EB
         uses: einaregilsson/beanstalk-deploy@v22
         with:
