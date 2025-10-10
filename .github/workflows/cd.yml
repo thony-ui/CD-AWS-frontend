@@ -1,41 +1,40 @@
-# ...existing code...
 name: CD Pipeline
-
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20.x"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm ci
 
-      - name: Build
+      - name: Build (optional if you use EB hook)
         run: npm run build
 
-      - name: Generate deployment package
-        run: zip -r frontend-app.zip .next public src eslint.config.mjs next-env.d.ts next.config.ts package.json package-lock.json postcss.config.mjs tsconfig.json .gitignore
-      - name: Get Node.js version
-        run: echo "VERSION=$(node -p 'require("./package.json").version')" >> $GITHUB_ENV
-      - name: Deploy to EB
+      - name: Zip app (project root, not parent)
+        run: |
+          zip -r frontend-app.zip . \
+            -x "*.git*" "*.github*" "*.vscode*" "node_modules/*" "*.env*" "tests/*" "frontend-app.zip"
+
+      - name: App version label
+        run: echo "VERSION=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v22
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: frontend-application
-          environment_name: Frontend-application-env
-          version_label: ${{ env.VERSION }}
+          application_name: frontend
+          environment_name: Frontend-env # must EXIST and be Healthy
           region: ap-southeast-1
+          version_label: ${{ env.VERSION }}
           deployment_package: frontend-app.zip
